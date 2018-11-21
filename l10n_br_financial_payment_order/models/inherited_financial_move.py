@@ -275,7 +275,8 @@ class FinancialMove(models.Model):
 
         dados_darf = {}
         for financial_move in self:
-            mes = financial_move.doc_source_id.mes_do_ano
+            mes = financial_move.doc_source_id.mes_do_ano \
+                if financial_move.doc_source_id.mes_do_ano <= 12 else 12
             ano = financial_move.doc_source_id.ano
             ultimo_dia_mes = self.last_day_of_month(
                 datetime.date(int(ano), int(mes), 1))
