@@ -94,9 +94,9 @@ class FinancialMove(models.Model):
     )
 
     num_referencia = fields.Char(
-        string='Número de referência',
         help='Número de referência do documento.'
              'No caso das DARFs será o número de identficação do beneficiário',
+        string='Número de Referência do Documento',
     )
 
     def _trata_linha_digitavel(self):
