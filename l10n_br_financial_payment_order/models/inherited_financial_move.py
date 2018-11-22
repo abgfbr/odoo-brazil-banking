@@ -272,6 +272,7 @@ class FinancialMove(models.Model):
                 self.valor_multa = dados_darf['valor_multa']
                 self.valor_juros_encargos = dados_darf['valor_juros_encargos']
                 self.valor_total = dados_darf['valor_total']
+                self.instrucoes = dados_darf['instrucoes']
 
         dados_darf = {}
         for financial_move in self:
@@ -304,6 +305,15 @@ class FinancialMove(models.Model):
             dados_darf['valor_multa'] = '0,00'
             dados_darf['valor_juros_encargos'] = '0,00'
             dados_darf['valor_total'] = formata_valor(valor_total)
+
+            # Instrucoes
+            dados_darf['instrucoes'] = ''
+            # No Décimo terceiro salario Guia de PSS deverá vir com Instrução
+            if financial_move.cod_receita in ['1661', '1850'] and \
+                    financial_move.doc_source_id.mes_do_ano == 13:
+                dados_darf['instrucoes'] += \
+                    'Observação:  GRATIFICAÇÃO NATALINA'
+
         return DarfObj(dados_darf)
 
     @api.multi
