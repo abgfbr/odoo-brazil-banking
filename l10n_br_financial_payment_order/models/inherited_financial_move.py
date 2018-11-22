@@ -276,19 +276,38 @@ class FinancialMove(models.Model):
 
         dados_darf = {}
         for financial_move in self:
-            mes = financial_move.doc_source_id.mes_do_ano \
-                if financial_move.doc_source_id.mes_do_ano <= 12 else 12
-            ano = financial_move.doc_source_id.ano
-            ultimo_dia_mes = self.last_day_of_month(
-                datetime.date(int(ano), int(mes), 1))
-            periodo_apuracao = str(ultimo_dia_mes) + '/' + str(mes) + '/' + \
-                str(ano)
             dados_darf['legal_name'] = financial_move.partner_id.legal_name
             dados_darf['telefone'] = financial_move.partner_id.phone or ''
             dados_darf['cnpj'] = financial_move.partner_id.cnpj_cpf
-            dados_darf['periodo_apuracao'] = periodo_apuracao
             dados_darf['cod_receita'] = financial_move.cod_receita
             dados_darf['num_referencia'] = financial_move.num_referencia or ''
+
+            valor_principal = financial_move.amount_document
+            dados_darf['valor_principal'] = formata_valor(valor_principal)
+
+            valor_multa = 0.00
+            dados_darf['valor_multa'] = '0,00'
+
+            valor_juros_encargos = 0.00
+            dados_darf['valor_juros_encargos'] = '0,00'
+
+            valor_total = valor_principal + valor_multa + valor_juros_encargos
+            dados_darf['valor_total'] = formata_valor(valor_total)
+
+            # Periodo de apuracao
+            ano_apuracao = financial_move.doc_source_id.ano
+            mes_apuracao = financial_move.doc_source_id.mes_do_ano \
+                if financial_move.doc_source_id.mes_do_ano <= 12 else 12
+            dia_apuracao = self.last_day_of_month(
+                datetime.date(int(ano_apuracao), int(mes_apuracao), 1))
+            # Para GUIA PSS a data sera no decenio de dezembro
+            if financial_move.cod_receita in ['1661', '1850'] and \
+                    financial_move.doc_source_id.mes_do_ano == 13:
+                dia_apuracao = 10
+            dados_darf['periodo_apuracao'] = '{}/{}/{}'.format(
+                dia_apuracao, mes_apuracao, ano_apuracao)
+
+            # Data de Vencimento
             data_vencimento = \
                 fields.Date.from_string(financial_move.date_maturity)
             dia = '0' + str(data_vencimento.day) if data_vencimento.day < \
@@ -297,14 +316,6 @@ class FinancialMove(models.Model):
                 10 else data_vencimento.month
             dados_darf['vencimento'] = \
                 str(dia) + '/' + str(mes) + '/' + str(data_vencimento.year)
-            valor_principal = financial_move.amount_document
-            valor_multa = 0.00
-            valor_juros_encargos = 0.00
-            valor_total = valor_principal + valor_multa + valor_juros_encargos
-            dados_darf['valor_principal'] = formata_valor(valor_principal)
-            dados_darf['valor_multa'] = '0,00'
-            dados_darf['valor_juros_encargos'] = '0,00'
-            dados_darf['valor_total'] = formata_valor(valor_total)
 
             # Instrucoes
             dados_darf['instrucoes'] = ''
