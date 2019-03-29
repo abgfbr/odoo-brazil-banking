@@ -23,3 +23,4 @@
 
 from . import payment_order_create
 from . import l10n_bank_payment_cnab_export
+from . import payment_order_valida_cnab_wizard

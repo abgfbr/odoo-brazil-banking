@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<openerp>
+    <data>
+
+        <record id="valida_cnab_wizard_form_view" model="ir.ui.view">
+            <field name="name">payment.order.validacnab.wizard.form</field>
+            <field name="model">payment.order.validacnab.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Diferenças encontradas">
+                    <field name="html_diferencas_cnabs" nolabel="1" readonly="True" />
+                    <footer>
+                        <button string="Ok" special="cancel" class="oe_highlight"/>
+                        or
+                        <button string="Cancelar" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</openerp>

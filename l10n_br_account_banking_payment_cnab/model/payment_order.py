@@ -4,8 +4,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from __future__ import division, print_function, unicode_literals
-
-from openerp import models, fields
+from openerp import models, fields, api
 
 from ..constantes import TIPO_SERVICO, FORMA_LANCAMENTO, \
     INDICATIVO_FORMA_PAGAMENTO, TIPO_MOVIMENTO, CODIGO_INSTRUCAO_MOVIMENTO
@@ -61,15 +60,19 @@ class PaymentOrder(models.Model):
         default='0',
     )
 
-    # @api.multi
-    # def set_to_draft(self, *args):
-    #     super(PaymentOrder, self).set_to_draft(*args)
-    #
-    #     for order in self:
-    #         for line in order.line_ids:
-    #             self.write_added_state_to_move_line(line.move_line_id)
-    #     return True
+    @api.multi
+    def validar_cnab(self):
+        self.ensure_one()
 
-    # @api.multi
-    # def write_added_state_to_move_line(self, mov_line):
-    #     mov_line.state_cnab = 'added'
+        v_cnab_wizard = self.env['payment.order.validacnab.wizard'].create({})
+        v_cnab_wizard.validar_cnab(self.id)
+
+        return {
+            'name': 'Validar CNAB',
+            'type': 'ir.actions.act_window',
+            'res_model': 'payment.order.validacnab.wizard',
+            'view_mode': 'form',
+            'view_type': 'form',
+            'res_id': v_cnab_wizard.id,
+            'target': 'new',
+        }

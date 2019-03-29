@@ -200,6 +200,22 @@ class L10nBrHrCnab(models.Model):
         vals.update({'name': name})
         return super(L10nBrHrCnab, self).create(vals)
 
+    def read_cnab_file(self, arquivo):
+        '''
+        Lê o arquivo do cnab
+
+        :param arquivo: file
+        :return: obj do arquivo
+        '''
+        arquivo_retono = base64.b64decode(arquivo)
+        f = open('/tmp/cnab_retorno.ret', 'wb')
+        f.write(arquivo_retono)
+        f.close()
+        arquivo_retono = codecs.open('/tmp/cnab_retorno.ret', encoding='ascii')
+        arquivo_parser = Arquivo(bancodobrasil, arquivo=arquivo_retono)
+
+        return arquivo_parser
+
     arquivo_retorno = fields.Binary(string='Arquivo Retorno')
     data = fields.Date(
         string="Data CNAB",

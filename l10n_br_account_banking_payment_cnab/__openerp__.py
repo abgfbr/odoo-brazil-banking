@@ -39,6 +39,7 @@
         'l10n_br_account_product',
     ],
     'data': [
+        'wizard/payment_order_valida_cnab_wizard.xml',
         'security/cnab_cobranca_security.xml',
         'view/l10n_br_payment_cnab.xml',
         'view/payment_order.xml',
@@ -52,6 +53,7 @@
         'view/payment_line.xml',
         'view/bank_payment_line.xml',
         'data/l10n_br_payment_export_type.xml',
+
         'security/ir.model.access.csv',
     ],
     'demo': [
