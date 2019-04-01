@@ -26,6 +26,16 @@
             </field>
         </record>
 
+        <record model="ir.ui.view" id="payment_order_cnab_form">
+            <field name="name">payment.order.folha.form (in l10n_br_account_banking_payment_cnab)</field>
+            <field name="model">payment.order</field>
+            <field name="inherit_id" ref="l10n_br_financial_payment_order.payment_order_base_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button name="validar_cnab" attrs="{'invisible':['|', ('cnab_file','=',False), ('tipo_de_folha','!=','normal')]}" type="object" string="Valida CNAB" />
+                </xpath>
+            </field>
+        </record>
 
     </data>
 </openerp>
