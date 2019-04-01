@@ -24,7 +24,7 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
         record = payment_order.browse(payment_order_id)
 
         # DataFrame com o cnab atual
-        cnab_atual = self._pega_cnab(record)
+        cnab_atual, cnab_atual_header = self._pega_cnab(record)
 
         # pega ano-mês anterior
         periodo_atual = datetime.datetime.strptime(
@@ -40,7 +40,7 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
 
         if len(data):
             # DataFrame com o cnab passado
-            cnab_passado = self._pega_cnab(data)
+            cnab_passado, cnab_passado_header = self._pega_cnab(data)
         else:
             raise UserError('Periodo passa não encontrado.')
 
@@ -55,38 +55,56 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
         dt_passada = datetime.datetime.strptime(
             data.date_scheduled, '%Y-%m-%d').strftime('%d/%m/%Y')
 
-        df = self._diferencas_cnab(
-            cnab_atual=cnab_atual,
-            cnab_passado=cnab_passado,
-            dt_atual=dt_atual,
-            dt_passada=dt_passada)
+        # DataFrame contendo eventos com valores diferentes
+        df_eventos_diferentes = self._diferencas_cnab(
+            cnab_atual=cnab_atual, cnab_passado=cnab_passado,
+            dt_atual=dt_atual, dt_passada=dt_passada, index='favorecido_nome')
+
+        # DataFrame contendo header com valores diferentes
+        df_header_diferentes = self._diferencas_cnab(
+            cnab_atual=cnab_atual_header, cnab_passado=cnab_passado_header,
+            dt_atual=dt_atual, dt_passada=dt_passada, index='nome_do_banco')
 
         self.html_diferencas_cnabs = ''
+
+        if len(df_header_diferentes):
+            self.html_diferencas_cnabs += \
+                '<h2><strong>Diferenças encontradas no cabeçalho do arquivo' \
+                '</strong></h2> <br />'
+            self.html_diferencas_cnabs += df_header_diferentes.to_html(
+                classes=["oe_list_content", "table-bordered",
+                         "table", "table-hover"])
+            self.html_diferencas_cnabs += '<hr />'
+
         if len(novo_f):
             self.html_diferencas_cnabs += \
-                '<p><strong>Novos favorecidos:</strong></p>'
+                '<h2><strong>Novos favorecidos:</strong></h2>'
             for novo in novo_f:
                 self.html_diferencas_cnabs += '<p>{}</p>'.format(novo)
+                self.html_diferencas_cnabs += '<hr />'
 
         if len(na_f):
             self.html_diferencas_cnabs += \
-                '<p><strong>Não são mais favorecidos:</strong></p>'
+                '<h2><strong>Não são mais favorecidos:</strong></h2>'
             for na in na_f:
                 self.html_diferencas_cnabs += '<p>{}</p>'.format(na)
+                self.html_diferencas_cnabs += '<hr />'
 
-        if len(df):
+        if len(df_eventos_diferentes):
             self.html_diferencas_cnabs += \
-                '<p><strong>Diferenças encontradas</strong></p>'
+                '<h2><strong>Diferenças encontradas nos eventos</strong>' \
+                '</h2> <br />'
 
-            self.html_diferencas_cnabs += df.to_html(
+            self.html_diferencas_cnabs += df_eventos_diferentes.to_html(
                 classes=["oe_list_content", "table-bordered",
                          "table", "table-hover"])
+            self.html_diferencas_cnabs += '<hr />'
 
         if self.html_diferencas_cnabs == '':
             self.html_diferencas_cnabs += \
-                '<p><strong>Nenhuma divergência encontrada</strong></p>'
-
-        return cnab_passado, cnab_atual
+                '<h2><strong>Nenhuma divergência encontrada</strong>' \
+                '</h2> <br />'
+            self.html_diferencas_cnabs += '<hr />'
 
     def _gera_df_cnab(self, cnab_obj):
         '''
@@ -96,16 +114,27 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
         :return: DataFrame
         '''
         # Cria lista com os campos do objeto
-        data = [{str(v): str(val._campos[v]).strip() for v in val._campos}
-                for val in cnab_obj._lotes[0]._eventos]
+        data_eventos = \
+            [{str(v): str(val._campos[v]).strip() for v in val._campos}
+             for val in cnab_obj._lotes[0]._eventos]
 
-        # Gera do DataFrame a partir da lista
-        df = pd.DataFrame(data)
+        # Gera do DataFrame a partir da lista de eventos
+        df_eventos = pd.DataFrame(data_eventos)
 
         # Define o nome do favorecido como index do DataFrame
-        df.set_index('favorecido_nome', inplace=True)
+        df_eventos.set_index('favorecido_nome', inplace=True)
 
-        return df
+        # Pega valores do header
+        data_header = {str(val): str(cnab_obj.header._campos[val]).strip()
+                       for val in cnab_obj.header._campos}
+
+        # Gera do DataFrame a partir da lista de header
+        df_header = pd.DataFrame(data_header, index=[0])
+
+        # Define nome do banco como index
+        df_header.set_index('nome_do_banco', inplace=True)
+
+        return df_eventos, df_header
 
     def _pega_cnab(self, record):
         if record.cnab_file:
@@ -114,7 +143,9 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
         else:
             raise UserError('CNAB do período passado não encontrado.')
 
-        return self._gera_df_cnab(cnab_obj=cnab_obj)
+        df_eventos, df_header = self._gera_df_cnab(cnab_obj=cnab_obj)
+
+        return df_eventos, df_header
 
     def _diferencas_cnab_index(self, cnab_atual, cnab_passado):
         '''
@@ -156,13 +187,19 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
 
         return cnab_atual, cnab_passado, novo_f, na_f
 
-    def _diferencas_cnab(self, cnab_atual, cnab_passado, dt_atual, dt_passada):
+    def _diferencas_cnab(self, cnab_atual, cnab_passado, dt_atual, dt_passada,
+                         index):
         '''
-        Busca valores divergentes entre o cnab atual e o cnab passado
+        Busca valores divergentes entre o cnab atual e o cnab passado(header e
+        eventos).
 
-        :param cnab_atual:
-        :param cnab_passado:
-        :return: DataFrame com diferenças
+        :param cnab_atual: DataFrame com eventos do cnab atual
+        :param cnab_passado: DataFrame com eventos do cnab passado
+        :param dt_atual: Data de pagamento do cnab atual
+        :param dt_passada: Data de Pagamento do cnab passado
+        :param index: Index da tabela
+
+        :return: DataFrame contendo somente as diferenças encontradas
         '''
         # Busca valores diferentes da atual na passada
         df_a = cnab_atual[cnab_atual[cnab_atual != cnab_passado].notnull()]
@@ -175,10 +212,10 @@ class PaymentOrderValidaCnabWizard(models.TransientModel):
         df_p.drop(null_cols_p, axis=1, inplace=True)
 
         # Une os resultados em um dataframe
-        df = df_a.merge(df_p, left_on='favorecido_nome',
-                        right_on='favorecido_nome',
+        df = df_a.merge(df_p, left_on=index, right_on=index,
                         suffixes=(' ({})'.format(dt_atual),
                                   ' ({})'.format(dt_passada)))
+
         df = df.replace(np.nan, '-', regex=True)
 
         return df
