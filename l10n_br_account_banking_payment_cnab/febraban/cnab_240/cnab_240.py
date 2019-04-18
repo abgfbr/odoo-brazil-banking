@@ -243,7 +243,8 @@ class Cnab240(Cnab):
 
     def get_file_numeration(self):
         # Função para retornar a numeração sequencial do arquivo
-        return 1
+        return self.order.mode.sequence_arquivo_id.next_by_id(
+            self.order.mode.sequence_arquivo_id.id)
 
     def _prepare_cobranca(self, line):
         """
