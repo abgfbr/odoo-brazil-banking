@@ -296,7 +296,6 @@ class FinancialMove(models.Model):
 
             # Periodo de Apuracao
             #
-
             data_base_apuracao = \
                 financial_move.date_document or fields.Date.today()
 
