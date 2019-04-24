@@ -294,12 +294,23 @@ class FinancialMove(models.Model):
             valor_total = valor_principal + valor_multa + valor_juros_encargos
             dados_darf['valor_total'] = formata_valor(valor_total)
 
-            # Periodo de apuracao
-            ano_apuracao = financial_move.doc_source_id.ano
-            mes_apuracao = financial_move.doc_source_id.mes_do_ano \
-                if financial_move.doc_source_id.mes_do_ano <= 12 else 12
-            dia_apuracao = self.last_day_of_month(
-                datetime.date(int(ano_apuracao), int(mes_apuracao), 1))
+            # Periodo de Apuracao
+            #
+
+            data_base_apuracao = \
+                financial_move.date_document or fields.Date.today()
+
+            # Periodo de apuracao baseado na data do documento
+            dia_apuracao = data_base_apuracao[8:10]
+            mes_apuracao = data_base_apuracao[5:7]
+            ano_apuracao = data_base_apuracao[0:4]
+            # Periodo de apuracao baseado no arquivo de origem
+            if financial_move.doc_source_id:
+                ano_apuracao = financial_move.doc_source_id.ano
+                mes_apuracao = financial_move.doc_source_id.mes_do_ano \
+                    if financial_move.doc_source_id.mes_do_ano <= 12 else 12
+                dia_apuracao = self.last_day_of_month(
+                    datetime.date(int(ano_apuracao), int(mes_apuracao), 1))
             # Para GUIA PSS a data sera no decenio de dezembro
             if financial_move.cod_receita in ['1661', '1850'] and \
                     financial_move.doc_source_id.mes_do_ano == 13:
@@ -308,6 +319,7 @@ class FinancialMove(models.Model):
                 dia_apuracao, mes_apuracao, ano_apuracao)
 
             # Data de Vencimento
+            #
             data_vencimento = \
                 fields.Date.from_string(financial_move.date_maturity)
             dia = '0' + str(data_vencimento.day) if data_vencimento.day < \
