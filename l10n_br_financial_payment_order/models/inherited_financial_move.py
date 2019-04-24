@@ -318,7 +318,7 @@ class FinancialMove(models.Model):
                 str(dia) + '/' + str(mes) + '/' + str(data_vencimento.year)
 
             # Instrucoes
-            dados_darf['instrucoes'] = ''
+            dados_darf['instrucoes'] = financial_move.note or ''
             # No Décimo terceiro salario Guia de PSS deverá vir com Instrução
             if financial_move.cod_receita in ['1661', '1850'] and \
                     financial_move.doc_source_id.mes_do_ano == 13:
