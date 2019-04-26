@@ -311,8 +311,9 @@ class FinancialMove(models.Model):
                 dia_apuracao = self.last_day_of_month(
                     datetime.date(int(ano_apuracao), int(mes_apuracao), 1))
             # Para GUIA PSS a data sera no decenio de dezembro
-            if financial_move.cod_receita in ['1661', '1850'] and \
-                    financial_move.doc_source_id.mes_do_ano == 13:
+            if financial_move.doc_source_id and \
+                    financial_move.doc_source_id.mes_do_ano == 13 and \
+                    financial_move.cod_receita in ['1661', '1850']:
                 dia_apuracao = 10
             dados_darf['periodo_apuracao'] = '{}/{}/{}'.format(
                 dia_apuracao, mes_apuracao, ano_apuracao)
@@ -331,8 +332,9 @@ class FinancialMove(models.Model):
             # Instrucoes
             dados_darf['instrucoes'] = financial_move.note or ''
             # No Décimo terceiro salario Guia de PSS deverá vir com Instrução
-            if financial_move.cod_receita in ['1661', '1850'] and \
-                    financial_move.doc_source_id.mes_do_ano == 13:
+            if financial_move.doc_source_id and \
+                    financial_move.doc_source_id.mes_do_ano == 13 and \
+                    financial_move.cod_receita in ['1661', '1850']:
                 dados_darf['instrucoes'] += \
                     'Observação:  GRATIFICAÇÃO NATALINA'
 
